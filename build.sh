@@ -2,13 +2,11 @@
 
 set -xe
 
-if ! pkg-config --exists glfw3; then
-    echo "Error: Glfw not found on the path"
-    exit 1
-fi
+GLFW_DIR="deps/glfw-3.4"
+GLEW_DIR="deps/glew-2.3.1"
 
-FLAGS="-Wpedantic -Wall -Wextra -std=c++17 -O2"
-GLFW_FLAGS=$(pkg-config --cflags glfw3 gl)
-GLFW_LIBS=$(pkg-config --libs glfw3 gl)
-
-g++ ${FLAGS} ${GLFW_FLAGS} -o app src/Application.cpp ${GLFW_LIBS}
+g++ -Wpedantic -Wall -Wextra -std=c++17 -O2 \
+    -I${GLFW_DIR}/include -I${GLEW_DIR}\include \
+    -o app \
+    src/Application.cpp ${GLFW_DIR}/build/src/libglfw3.a ${GLEW_DIR}/lib/libGLEW.a \
+    -lGL -lm

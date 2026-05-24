@@ -118,39 +118,32 @@ int main(void)
 
     std::cout << "OpenGL version: " << glGetString(GL_VERSION) << "\n";
 
-    float positions[6] = {
-        -0.5f, -0.5f,
-         0.0f,  0.5f,
-         0.5f, -0.5f,
+    float positions[] = {
+        //  x,     y,
+        -0.5f, -0.5f, // 0
+         0.5f, -0.5f, // 1
+         0.5f,  0.5f, // 2
+        -0.5f,  0.5f, // 3
+    };
+
+    uint32_t indices[] = {  // This is an index buffer
+        0, 1, 2, // First triangle
+        0, 2, 3, // Second triangle
     };
 
     uint32_t buffer; // Stores an uint that represents the ID tho identify this buffer later
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), positions, GL_STATIC_DRAW);
 
     // Tells OpenGL what the layout of our buffer is
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
 
-    // std::string vertexShader =
-    //     "#version 330 core\n"
-    //     "\n"
-    //     "layout(location = 0) in vec4 position;\n"
-    //     "\n"
-    //     "void main() {\n"
-    //     "  gl_Position = position;\n"
-    //     "}\n";
-    // std::string fragmentShader =
-    //     "#version 330 core\n"
-    //     "\n"
-    //     "layout(location = 0) out vec4 color;\n"
-    //     "\n"
-    //     "void main() {\n"
-    //     "  color = vec4(1.0, 0.0, 0.0, 1.0);\n"
-    //     "}\n";
-    // uint32_t shader = CreateShader(vertexShader, fragmentShader);
-    // glUseProgram(shader);
+    uint32_t ibo; // Index buffer object
+    glGenBuffers(1, &ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(uint32_t), indices, GL_STATIC_DRAW);
 
     ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
     //std::cout << "Vertex: \n" << source.VertexSource << "\n\nFragment:\n" << source.FragmentSource << std::endl;
@@ -163,7 +156,8 @@ int main(void)
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

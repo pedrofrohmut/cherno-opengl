@@ -12,7 +12,56 @@
 #include <GLFW/glfw3.h>
 // #include <GL/glut.h>
 
-#define CWD (std::filesystem::current_path()).string()
+#define CWD_ (std::filesystem::current_path()).string()
+
+// Using a macro here make it a lot easier.
+// With a function you would need to pass file and line to it
+#ifdef WIN32
+  #define ASSERT_(x) if(!(x)) __debugBreak();
+#else
+  #include <signal.h>
+  #define ASSERT_(x) if(!(x)) raise(SIGTRAP);
+#endif
+
+#define GlCall_(x) ClearAllGlErrors();\
+    x;\
+    ASSERT_(LogGlCall(#x, __FILE__, __LINE__))
+
+static void ClearAllGlErrors()
+{
+    while (glGetError() != GL_NO_ERROR)
+    {
+    }
+}
+
+static bool LogGlCall(const char *function, const char *file, int line)
+{
+    bool success = true;
+    while (GLenum error = glGetError())
+    {
+        success = false;
+        std::string errorStr;
+        switch (error)
+        {
+        case GL_INVALID_ENUM:
+            errorStr = "GL_INVALID_ENUM"; break;
+        case GL_INVALID_VALUE:
+            errorStr = "GL_INVALID_VALUE"; break;
+        case GL_INVALID_OPERATION:
+            errorStr = "GL_INVALID_OPERATION"; break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            errorStr = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
+        case GL_OUT_OF_MEMORY:
+            errorStr = "GL_OUT_OF_MEMORY"; break;
+        case GL_STACK_UNDERFLOW:
+            errorStr = "GL_STACK_UNDERFLOW"; break;
+        case GL_STACK_OVERFLOW:
+            errorStr = "GL_STACK_OVERFLOW"; break;
+        }
+        std::cout << "[OpenGL Error] (" << errorStr << "): " << function << " " << file << ":" << line << "\n";
+    }
+    return success;
+}
 
 struct ShaderProgramSource
 {
@@ -157,7 +206,13 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
         // glDrawArrays(GL_TRIANGLES, 0, 6);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+        // ClearAllGlErrors();
+        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        // ASSERT_(LogGlCall());
+
+        GlCall_(glDrawElements(GL_TRIANGLES, 6, GL_INT, nullptr));
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

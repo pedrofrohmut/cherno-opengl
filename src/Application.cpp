@@ -158,6 +158,7 @@ int main(void)
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(5);
 
     // Glew Docs: First you need to create a valid OpenGL rendering context and call glewInit()
     if (glewInit() != GLEW_OK) {
@@ -181,29 +182,35 @@ int main(void)
     };
 
     uint32_t buffer; // Stores an uint that represents the ID tho identify this buffer later
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), positions, GL_STATIC_DRAW);
+    GlCall_(glGenBuffers(1, &buffer));
+    GlCall_(glBindBuffer(GL_ARRAY_BUFFER, buffer));
+    GlCall_(glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), positions, GL_STATIC_DRAW));
 
     // Tells OpenGL what the layout of our buffer is
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+    GlCall_(glEnableVertexAttribArray(0));
+    GlCall_(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0));
 
     uint32_t ibo; // Index buffer object
-    glGenBuffers(1, &ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(uint32_t), indices, GL_STATIC_DRAW);
+    GlCall_(glGenBuffers(1, &ibo));
+    GlCall_(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
+    GlCall_(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(uint32_t), indices, GL_STATIC_DRAW));
 
     ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
     //std::cout << "Vertex: \n" << source.VertexSource << "\n\nFragment:\n" << source.FragmentSource << std::endl;
     uint32_t shader = CreateShader(source.VertexSource, source.FragmentSource);
-    glUseProgram(shader);
+    GlCall_(glUseProgram(shader));
 
+    GlCall_(int32_t location = glGetUniformLocation(shader, "u_Color"));
+    ASSERT_(location != -1);
+    GlCall_(glUniform4f(location, 0.8f, 0.3f, 0.8f, 1.0f));
+
+    float red = 0.0f;
+    float increment = 0.01f;
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
         /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
+        GlCall_(glClear(GL_COLOR_BUFFER_BIT));
 
         // glDrawArrays(GL_TRIANGLES, 0, 6);
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
@@ -212,7 +219,15 @@ int main(void)
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         // ASSERT_(LogGlCall());
 
-        GlCall_(glDrawElements(GL_TRIANGLES, 6, GL_INT, nullptr));
+        GlCall_(glUniform4f(location, red, 0.3f, 0.8f, 1.0f));
+        GlCall_(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+
+        if (red > 1.0f)
+            increment = -0.1f;
+        else if (red < 0.0f)
+            increment = 0.1f;
+
+        red += increment;
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

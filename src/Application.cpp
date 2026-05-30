@@ -29,9 +29,7 @@
 
 static void ClearAllGlErrors()
 {
-    while (glGetError() != GL_NO_ERROR)
-    {
-    }
+    while (glGetError() != GL_NO_ERROR);
 }
 
 static bool LogGlCall(const char *function, const char *file, int line)
@@ -142,12 +140,27 @@ static uint32_t CreateShader(const std::string& vertexShader, const std::string&
     return program;
 }
 
+void error_callback(int error, const char* description)
+{
+    fprintf(stderr, "Error[%d]: %s\n", error, description);
+}
+
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+}
+
 int main(void)
 {
     GLFWwindow* window;
 
-    /* Initialize the library */
+    glfwSetErrorCallback(error_callback);
     if (!glfwInit()) { return -1; }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(640, 480, "opengl_app", NULL, NULL);
@@ -155,6 +168,9 @@ int main(void)
         glfwTerminate();
         return -1;
     }
+
+    // Setup callback to process keys pressed
+    glfwSetKeyCallback(window, key_callback);
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
@@ -181,10 +197,17 @@ int main(void)
         0, 2, 3, // Second triangle
     };
 
+    uint32_t vao;
+    GlCall_(glGenVertexArrays(1, &vao));
+    GlCall_(glBindVertexArray(vao));
+
+    const uint32_t num_points = 4;
+    const uint32_t num_dimentions = 2;
+    const uint32_t size_of_buffer = num_points * num_dimentions * sizeof(float);
     uint32_t buffer; // Stores an uint that represents the ID tho identify this buffer later
     GlCall_(glGenBuffers(1, &buffer));
     GlCall_(glBindBuffer(GL_ARRAY_BUFFER, buffer));
-    GlCall_(glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), positions, GL_STATIC_DRAW));
+    GlCall_(glBufferData(GL_ARRAY_BUFFER, size_of_buffer, positions, GL_STATIC_DRAW));
 
     // Tells OpenGL what the layout of our buffer is
     GlCall_(glEnableVertexAttribArray(0));
@@ -204,10 +227,17 @@ int main(void)
     ASSERT_(location != -1);
     GlCall_(glUniform4f(location, 0.8f, 0.3f, 0.8f, 1.0f));
 
+    // Unbound everything to make the binding in the main loop
+    GlCall_(glUseProgram(0));
+    GlCall_(glBindBuffer(GL_ARRAY_BUFFER, 0));
+    GlCall_(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+
+    std::cout << "Welcome to the OpenGL application!\n";
+
     float red = 0.0f;
     float increment = 0.01f;
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
+
+    while (!glfwWindowShouldClose(window)) // Main loop
     {
         /* Render here */
         GlCall_(glClear(GL_COLOR_BUFFER_BIT));
@@ -219,7 +249,12 @@ int main(void)
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         // ASSERT_(LogGlCall());
 
-        GlCall_(glUniform4f(location, red, 0.3f, 0.8f, 1.0f));
+        GlCall_(glUseProgram(shader));
+        GlCall_(glUniform4f(location, red, 0.3f, 0.8f, 1.0f)); // Pass the color to the shader. instead of hardcoded value
+
+        GlCall_(glBindVertexArray(vao));
+        GlCall_(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
+
         GlCall_(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
         if (red > 1.0f)
